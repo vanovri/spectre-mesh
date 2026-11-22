@@ -1,0 +1,14 @@
+[package]
+name = "spectre-profile"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+
+[dependencies]
+thiserror = { workspace = true }
+serde = { workspace = true }
+serde_json = "1.0"
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+spectre-elf-btf = { path = "../spectre-elf-btf" }

@@ -8,6 +8,7 @@ members = [
     "crates/spectre-xdp",
     "crates/spectre-tls",
     "crates/spectre-l7",
+    "crates/spectre-profile",
 ]
 
 [workspace.package]

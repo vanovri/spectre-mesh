@@ -100,6 +100,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "spectre-profile"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "spectre-elf-btf",
+ "thiserror",
+]
+
+[[package]]
 name = "spectre-tls"
 version = "0.1.0"
 dependencies = [
