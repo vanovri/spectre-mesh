@@ -2,7 +2,8 @@
 /probes/build/*.o
 /studio/node_modules/
 /studio/dist/
-/studio/src/wasm/
+/studio/src/wasm-pkg/
+.telemetry-logs/
 *.log
 *.tmp
 .DS_Store

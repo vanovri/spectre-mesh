@@ -14,7 +14,14 @@ BPF_CFLAGS := -target bpf -O2 -g -Wall -Werror -D$(TARGET_ARCH) -Iprobes/include
 PROBE_SRCS := $(wildcard probes/*.bpf.c)
 PROBE_OBJS := $(patsubst probes/%.bpf.c,$(PROBE_BUILD_DIR)/%.bpf.o,$(PROBE_SRCS))
 
-.PHONY: all build-probes check test fuzz-l7-elf mesh-oracle bench wasm-studio verify-all docker-verify clean
+TELEMETRY_SCRIPT := scripts/emit_telemetry_summary.mjs
+TELEMETRY_OUT    := studio/public/telemetry/summary.json
+TELEMETRY_LOGDIR := .telemetry-logs
+PERF_REPORT      := docs/benchmarks/ebpf_perf.md
+PROGRESS_LEDGER  := PROGRESS.md
+SPECTRE_WASM_PATH ?=
+
+.PHONY: all build-probes check test fuzz-l7-elf mesh-oracle bench wasm-studio telemetry-summary verify-all verify-live docker-verify clean
 
 all: verify-all
 
@@ -56,13 +63,49 @@ wasm-studio:
 	RUSTFLAGS="-C target-feature=+simd128" $(CARGO) build --release -p spectre-wasm --target wasm32-unknown-unknown
 	wasm-bindgen --target web --out-dir studio/src/wasm $${CARGO_TARGET_DIR:-target}/wasm32-unknown-unknown/release/spectre_wasm.wasm
 	wasm-opt -O3 --enable-simd studio/src/wasm/spectre_wasm_bg.wasm -o studio/src/wasm/spectre_wasm_bg.wasm
-	node -e "const fs=require('fs'),p='studio/public/telemetry/summary.json';if(fs.existsSync(p)){const sz=Math.ceil(fs.statSync('studio/src/wasm/spectre_wasm_bg.wasm').size/1024);const j=JSON.parse(fs.readFileSync(p,'utf8'));j.wasmSizeKb=sz;fs.writeFileSync(p,JSON.stringify(j,null,2)+'\n');console.log('Stamped wasmSizeKb='+sz);}"
+	$(MAKE) telemetry-summary
 	cd studio && $(NPM) install --no-audit --no-fund && $(NPM) run test:run && $(NPM) run build
+
+telemetry-summary:
+	@echo "==> Emitting SpectreMesh VERIFIED_LIVE telemetry summary (camelCase, /1024 KB)..."
+	@node $(TELEMETRY_SCRIPT) \
+		--report $(PERF_REPORT) \
+		--progress $(PROGRESS_LEDGER) \
+		--out $(TELEMETRY_OUT) \
+		$(if $(SPECTRE_WASM_PATH),--wasm $(SPECTRE_WASM_PATH),) \
+		--strict
 
 verify-all: build-probes check test fuzz-l7-elf mesh-oracle bench wasm-studio
 	@echo "================================================================"
 	@echo " SpectreMesh M01-M09 Full Verification Gate: 100% GREEN         "
 	@echo "================================================================"
+
+verify-live: verify-all telemetry-summary
+	@echo "==> Verifying summary.json parity (--verify --strict)..."
+	@node $(TELEMETRY_SCRIPT) \
+		--report $(PERF_REPORT) \
+		--progress $(PROGRESS_LEDGER) \
+		--out $(TELEMETRY_OUT) \
+		$(if $(SPECTRE_WASM_PATH),--wasm $(SPECTRE_WASM_PATH),) \
+		--verify --strict
+	@echo "==> Running negative strict contract test (--report Cargo.toml --strict)..."
+	@mkdir -p $(TELEMETRY_LOGDIR)
+	@rm -f $(TELEMETRY_LOGDIR)/negative-summary.json
+	@if node $(TELEMETRY_SCRIPT) \
+		--report Cargo.toml \
+		--progress $(PROGRESS_LEDGER) \
+		--out $(TELEMETRY_LOGDIR)/negative-summary.json \
+		$(if $(SPECTRE_WASM_PATH),--wasm $(SPECTRE_WASM_PATH),) \
+		--strict > $(TELEMETRY_LOGDIR)/negative-test.log 2>&1; then \
+		echo "ERROR: Negative strict test unexpectedly exited 0"; \
+		exit 1; \
+	fi
+	@if [ -e "$(TELEMETRY_LOGDIR)/negative-summary.json" ]; then \
+		echo "ERROR: Negative strict test created output file"; \
+		exit 1; \
+	fi
+	@echo "==> Negative strict test PASSED (EXIT 1, no output file created)."
+	@echo "==> SpectreMesh VERIFIED_LIVE gate PASSED."
 
 docker-verify:
 	docker build -f Dockerfile.linux-verify -t $(DOCKER_IMAGE) .

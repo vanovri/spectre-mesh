@@ -11,12 +11,13 @@ import {
 import { parseTelemetrySummary } from '../lib/telemetry';
 
 describe('SpectreMesh Studio contracts', () => {
-  it('validates LabTelemetrySummary JSON schema written by spectre-bench', () => {
+  it('validates LabTelemetrySummary JSON schema emitted by verify-live', () => {
     const summaryPath = resolve(__dirname, '../../public/telemetry/summary.json');
     const raw = JSON.parse(readFileSync(summaryPath, 'utf-8')) as unknown;
     const summary = parseTelemetrySummary(raw);
-    expect(summary.schemaVersion).toBe(1);
+    expect(summary.schemaVersion).toBe('1.0.0');
     expect(summary.slug).toBe('spectre');
+    expect(summary.status).toBe('VERIFIED_LIVE');
     expect(summary.secondaryMetrics).toHaveLength(3);
     expect(Number(summary.headlineMetric.value)).toBeGreaterThan(0);
   });
