@@ -56,6 +56,7 @@ wasm-studio:
 	RUSTFLAGS="-C target-feature=+simd128" $(CARGO) build --release -p spectre-wasm --target wasm32-unknown-unknown
 	wasm-bindgen --target web --out-dir studio/src/wasm $${CARGO_TARGET_DIR:-target}/wasm32-unknown-unknown/release/spectre_wasm.wasm
 	wasm-opt -O3 --enable-simd studio/src/wasm/spectre_wasm_bg.wasm -o studio/src/wasm/spectre_wasm_bg.wasm
+	node -e "const fs=require('fs'),p='studio/public/telemetry/summary.json';if(fs.existsSync(p)){const sz=Math.ceil(fs.statSync('studio/src/wasm/spectre_wasm_bg.wasm').size/1024);const j=JSON.parse(fs.readFileSync(p,'utf8'));j.wasmSizeKb=sz;fs.writeFileSync(p,JSON.stringify(j,null,2)+'\n');console.log('Stamped wasmSizeKb='+sz);}"
 	cd studio && $(NPM) install --no-audit --no-fund && $(NPM) run test:run && $(NPM) run build
 
 verify-all: build-probes check test fuzz-l7-elf mesh-oracle bench wasm-studio

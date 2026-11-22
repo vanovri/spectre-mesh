@@ -1,0 +1,68 @@
+name: SpectreMesh CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  rust-cross-platform:
+    name: Portable Verification (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+          targets: wasm32-unknown-unknown
+      - name: Check formatting & clippy (zero warnings)
+        run: |
+          cargo fmt --all -- --check
+          cargo clippy --workspace --all-targets -- -D warnings
+      - name: Run portable unit & fuzzer suites
+        run: |
+          cargo test -p spectre-elf-btf --lib -- --nocapture
+          cargo test -p spectre-elf-btf --test fuzz_elf_btf --release
+          cargo test -p spectre-verifier --release
+          cargo test -p spectre-l7 --release
+          cargo test -p spectre-profile --lib --release
+          cargo test -p spectre-tls --lib --release
+          cargo test -p spectre-oracle --lib --release
+          cargo test -p spectre-daemon --release
+          cargo test -p spectre-tui --release
+          cargo test -p spectre-wasm --release
+
+  ebpf-probes-and-wasm-studio:
+    name: eBPF CO-RE Bytecode + WASM Studio E2E
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+          targets: wasm32-unknown-unknown
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install Clang/LLVM, Binaryen, & wasm-bindgen-cli
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang llvm libssl-dev gcc binaryen
+          cargo install wasm-bindgen-cli --version 0.2.130 --locked
+      - name: Compile kernel eBPF CO-RE objects
+        run: make build-probes
+      - name: Check forbidden crates, stubs, and static clippy
+        run: make check
+      - name: Verify pure-Rust L7 + Verifier + WASM Studio build
+        run: |
+          make fuzz-l7-elf
+          make wasm-studio
+          test -s studio/dist/labs/spectre/index.html
+          test -s studio/src/wasm/spectre_wasm_bg.wasm

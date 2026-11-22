@@ -1,43 +1,43 @@
 {
   "os": "linux",
   "arch": "x86_64",
-  "commit_sha": "5149d8960fdf",
-  "generated_at_iso": "2026-11-22T10:53:37Z",
+  "commit_sha": "51370b42626d",
+  "generated_at_iso": "2026-11-22T11:14:15Z",
   "xdp": {
     "kernel_repeats": 500000,
-    "kernel_ns_per_pkt": 58.0,
-    "kernel_mpps": 17.24137931034483,
+    "kernel_ns_per_pkt": 99.0,
+    "kernel_mpps": 10.1010101010101,
     "vm_iters": 100000,
-    "vm_ns_per_pkt": 219.65391,
-    "vm_mpps": 4.552616431913277
+    "vm_ns_per_pkt": 121.56693,
+    "vm_mpps": 8.225921309356089
   },
   "ringbuf": {
     "events": 100000,
     "drops": 0,
-    "elapsed_ms": 4138.065541,
-    "events_per_sec": 24165.88113677729,
-    "mb_per_sec": 0.5531131241632986
+    "elapsed_ms": 4296.053519,
+    "events_per_sec": 23277.17742754685,
+    "mb_per_sec": 0.5327723105059856
   },
   "tls_uprobe": {
     "requests": 2000,
-    "baseline_us_per_req": 249.665523,
-    "uprobe_us_per_req": 328.07043,
-    "delta_us_per_req": 78.40490699999998,
+    "baseline_us_per_req": 74.279859,
+    "uprobe_us_per_req": 123.270932,
+    "delta_us_per_req": 48.991073,
     "ringbuf_drops": 0
   },
   "l7_dissector": {
     "total_requests": 20000,
     "total_bytes": 1335000,
-    "elapsed_ms": 43.961604,
-    "req_per_sec": 454942.453874067,
-    "mb_per_sec": 28.96061782464406,
-    "ns_per_req": 2198.0802
+    "elapsed_ms": 18.266689999999997,
+    "req_per_sec": 1094889.1123679222,
+    "mb_per_sec": 69.69818902068978,
+    "ns_per_req": 913.3345
   },
   "verifier": {
     "programs_verified": 2000,
     "probes_parsed": 6,
-    "elapsed_ms": 2035.6338859999998,
-    "verifs_per_sec": 982.4949435922291,
-    "us_per_program": 1017.8169429999999
+    "elapsed_ms": 604.9671979999999,
+    "verifs_per_sec": 3305.9643673440955,
+    "us_per_program": 302.48359899999997
   }
 }

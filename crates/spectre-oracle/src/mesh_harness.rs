@@ -99,16 +99,16 @@ struct DrainContext {
 fn spawn_drain_worker(ctx: Arc<DrainContext>) -> std::thread::JoinHandle<()> {
     std::thread::spawn(move || {
         while !ctx.stop.load(Ordering::Acquire) {
-            drain_once(&ctx);
-            std::thread::sleep(Duration::from_micros(400));
+            let _ = drain_once(&ctx);
+            std::thread::sleep(Duration::from_micros(250));
         }
         // Final drain barrier after workloads settle
         std::thread::sleep(Duration::from_millis(30));
-        drain_once(&ctx);
+        while drain_once(&ctx) {}
     })
 }
 
-fn drain_once(ctx: &DrainContext) {
+fn drain_once(ctx: &DrainContext) -> bool {
     let mut tls_events = {
         let mut t = ctx.tls.lock().unwrap();
         t.drain_tls_events()
@@ -118,7 +118,7 @@ fn drain_once(ctx: &DrainContext) {
         m.drain_l7_events()
     };
     if tls_events.is_empty() && tcp_events.is_empty() {
-        return;
+        return false;
     }
     tls_events.sort_by_key(|e| (e.ts_ns, e.chunk_seq));
     tcp_events.sort_by_key(|e| (e.ts_ns, e.chunk_seq));
@@ -150,6 +150,7 @@ fn drain_once(ctx: &DrainContext) {
             payload: &ev.payload,
         });
     }
+    true
 }
 
 fn parse_truth_tsv(raw: &str, proto: L7Protocol) -> Result<Vec<GroundTruthRecord>, OracleError> {
@@ -780,28 +781,34 @@ fn read_pg_until_ready(stream: &mut TcpStream) {
     }
 }
 
-fn read_resp_line(stream: &mut TcpStream, buf: &mut Vec<u8>) {
-    buf.clear();
-    let mut byte = [0u8; 1];
-    loop {
-        stream.read_exact(&mut byte).unwrap();
-        buf.push(byte[0]);
-        if buf.len() >= 2 && buf[buf.len() - 2] == b'\r' && buf[buf.len() - 1] == b'\n' {
-            break;
+fn try_consume_redis_reply(buf: &[u8]) -> Option<usize> {
+    let crlf1 = buf.windows(2).position(|w| w == b"\r\n")?;
+    if buf.first() == Some(&b'$') {
+        let len_s = std::str::from_utf8(&buf[1..crlf1]).ok()?;
+        let blen: isize = len_s.parse().ok()?;
+        if blen < 0 {
+            return Some(crlf1 + 2);
         }
+        let total = crlf1 + 2 + (blen as usize) + 2;
+        if buf.len() < total {
+            return None;
+        }
+        Some(total)
+    } else {
+        Some(crlf1 + 2)
     }
 }
 
-fn read_one_redis_reply(stream: &mut TcpStream) {
-    let mut line = Vec::with_capacity(64);
-    read_resp_line(stream, &mut line);
-    if line.first() == Some(&b'$') {
-        let len_s = std::str::from_utf8(&line[1..line.len() - 2]).unwrap();
-        let blen: isize = len_s.parse().unwrap();
-        if blen >= 0 {
-            let mut bulk = vec![0u8; (blen as usize) + 2];
-            stream.read_exact(&mut bulk).unwrap();
+fn read_one_redis_reply(stream: &mut TcpStream, rbuf: &mut Vec<u8>) {
+    let mut tmp = [0u8; 512];
+    loop {
+        if let Some(consumed) = try_consume_redis_reply(rbuf) {
+            rbuf.drain(..consumed);
+            return;
         }
+        let n = stream.read(&mut tmp).unwrap();
+        assert!(n > 0, "unexpected EOF on redis socket");
+        rbuf.extend_from_slice(&tmp[..n]);
     }
 }
 
@@ -922,6 +929,7 @@ fn run_redis(addr: String, conns: usize, total: usize) {
         off += count;
         handles.push(std::thread::spawn(move || {
             let mut s = stream;
+            let mut rbuf = Vec::with_capacity(512);
             let mut recs = String::with_capacity(count * 48);
             for i in 0..count {
                 let gidx = start_idx + i;
@@ -949,7 +957,7 @@ fn run_redis(addr: String, conns: usize, total: usize) {
                 };
                 let t0 = Instant::now();
                 s.write_all(cmd.as_bytes()).unwrap();
-                read_one_redis_reply(&mut s);
+                read_one_redis_reply(&mut s, &mut rbuf);
                 let dt = t0.elapsed().as_nanos() as u64;
                 use std::fmt::Write;
                 let _ = writeln!(recs, "{method}\t{prefix}\t200\t{dt}");
@@ -1312,7 +1320,7 @@ pub fn run_live_mesh_oracle(cfg: &MeshOracleConfig) -> Result<OracleReport, Orac
             .args([
                 "client",
                 &oss_port.to_string(),
-                "8",
+                "4",
                 &n_oss.to_string(),
                 oss_truth_path.to_str().unwrap(),
             ])
@@ -1374,7 +1382,7 @@ pub fn run_live_mesh_oracle(cfg: &MeshOracleConfig) -> Result<OracleReport, Orac
             .args([
                 "client",
                 &go_addr,
-                "8",
+                "4",
                 &n_go.to_string(),
                 go_truth_path.to_str().unwrap(),
             ])
@@ -1417,7 +1425,7 @@ pub fn run_live_mesh_oracle(cfg: &MeshOracleConfig) -> Result<OracleReport, Orac
             .args([
                 "pg",
                 &format!("127.0.0.1:{pg_port}"),
-                "8",
+                "4",
                 &n_pg.to_string(),
             ])
             .stdin(Stdio::piped())
@@ -1462,7 +1470,7 @@ pub fn run_live_mesh_oracle(cfg: &MeshOracleConfig) -> Result<OracleReport, Orac
             .args([
                 "redis",
                 &format!("127.0.0.1:{rd_port}"),
-                "8",
+                "4",
                 &n_redis.to_string(),
             ])
             .stdin(Stdio::piped())
@@ -1508,6 +1516,11 @@ pub fn run_live_mesh_oracle(cfg: &MeshOracleConfig) -> Result<OracleReport, Orac
         let tcp_drops = tcp.lock().unwrap().read_ringbuf_drops()?;
         tls_drops + tcp_drops
     };
+    if ringbuf_drops > 0 {
+        return Err(OracleError::VerificationFailed(format!(
+            "RingBuf dropped {ringbuf_drops} events"
+        )));
+    }
     let spans: Vec<L7Span> = reasm.lock().unwrap().drain_spans();
 
     drop(drain_ctx);

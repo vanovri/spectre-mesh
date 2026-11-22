@@ -2,33 +2,33 @@
   "schemaVersion": 1,
   "slug": "spectre",
   "status": "VERIFIED_LIVE",
-  "commitSha": "5149d8960fdf",
-  "generatedAtIso": "2026-11-22T10:53:37Z",
-  "wasmSizeKb": 0,
+  "commitSha": "51370b42626d",
+  "generatedAtIso": "2026-11-22T11:14:15Z",
+  "wasmSizeKb": 257,
   "wasmAssetPath": "/labs/spectre/assets/spectre_wasm_bg.wasm",
   "verificationGate": "make verify-all (M01-M09)",
   "headlineMetric": {
     "label": "XDP Packet Filter",
-    "value": "17.24",
+    "value": "10.10",
     "unit": "Mpps",
-    "deltaOrNote": "58.00 ns/pkt (BPF_PROG_TEST_RUN)"
+    "deltaOrNote": "99.00 ns/pkt (BPF_PROG_TEST_RUN)"
   },
   "secondaryMetrics": [
     {
       "label": "RingBuf Sustained",
-      "value": "24.2",
+      "value": "23.3",
       "unit": "k evt/s",
-      "deltaOrNote": "0.6 MB/s, 0 drops across 100k events"
+      "deltaOrNote": "0.5 MB/s, 0 drops across 100k events"
     },
     {
       "label": "TLS 1.3 Uprobe Delta",
-      "value": "78.40",
+      "value": "48.99",
       "unit": "us/req",
       "deltaOrNote": "OpenSSL 3.5.5 entry/uretprobe overhead (0 MITM certs)"
     },
     {
       "label": "L7 Streaming Decode",
-      "value": "454.9",
+      "value": "1094.9",
       "unit": "k req/s",
       "deltaOrNote": "HTTP/1.1 + HTTP/2 HPACK/gRPC + PG v3 + Redis RESP3"
     }

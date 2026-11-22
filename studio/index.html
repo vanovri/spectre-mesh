@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SpectreMesh Studio — WebAssembly eBPF Verifier, L7 Dissector & Flamegraphs</title>
+  </head>
+  <body>
+    <systems-lab-dock id="lab-dock" active="spectre" wasm-kb="—" gate="M01-M09"></systems-lab-dock>
+    <main class="shell">
+      <header class="hero">
+        <div>
+          <p class="eyebrow">ZERO-INSTRUMENTATION EBPF OBSERVABILITY & STATIC VERIFIER LAB</p>
+          <h1>SpectreMesh <span class="accent">WASM+SIMD128</span> Studio</h1>
+          <p class="subtitle">
+            Executing pure-Rust eBPF ISA v3 abstract-interpretation verification (Tnum bitmasks), XDP packet simulation,
+            RFC 7541 HPACK/gRPC/SQL/Redis stream dissection, and differential flamegraph synthesis inside a dedicated WebWorker.
+          </p>
+        </div>
+        <section id="telemetry-strip" class="telemetry-strip" aria-label="Verified Telemetry Metrics">
+          <div class="metric-card"><span>XDP Kernel Filter</span><strong id="m-xdp">Loading...</strong></div>
+          <div class="metric-card"><span>RingBuf Sustained</span><strong id="m-rb">Loading...</strong></div>
+          <div class="metric-card"><span>TLS 1.3 Uprobe Delta</span><strong id="m-tls">Loading...</strong></div>
+          <div class="metric-card"><span>L7 Streaming Decode</span><strong id="m-l7">Loading...</strong></div>
+        </section>
+      </header>
+
+      <nav class="tabs" role="tablist" aria-label="Workbenches">
+        <button class="tab-btn active" data-tab="verifier" role="tab" aria-selected="true">
+          1. eBPF Static Verifier & XDP VM
+        </button>
+        <button class="tab-btn" data-tab="l7" role="tab" aria-selected="false">
+          2. L7 / HPACK / gRPC / SQL Dissector
+        </button>
+        <button class="tab-btn" data-tab="flamegraph" role="tab" aria-selected="false">
+          3. Differential Flamegraph Studio
+        </button>
+      </nav>
+
+      <section id="panel-verifier" class="panel active">
+        <div class="controls">
+          <label>Preset:
+            <select id="ebpf-preset-select"></select>
+          </label>
+          <button id="btn-verify" class="primary">Verify + Simulate XDP</button>
+        </div>
+        <div class="grid-2">
+          <div>
+            <h3>eBPF Bytecode (Little-Endian Hex)</h3>
+            <textarea id="ebpf-bytecode" rows="5" spellcheck="false"></textarea>
+            <h3>L2/IPv4/TCP Sample Packet (Hex)</h3>
+            <textarea id="ebpf-packet" rows="3" spellcheck="false"></textarea>
+            <h3>Disassembly</h3>
+            <pre id="ebpf-disasm" class="code-box"></pre>
+          </div>
+          <div>
+            <h3>Abstract Interpretation Verdict & XDP VM Action</h3>
+            <div id="ebpf-verdict" class="verdict-banner">Initializing WASM worker...</div>
+            <h3>Register Tnum Trace Steps</h3>
+            <pre id="ebpf-trace" class="code-box tall"></pre>
+          </div>
+        </div>
+      </section>
+
+      <section id="panel-l7" class="panel">
+        <div class="controls">
+          <label>Stream Preset:
+            <select id="l7-preset-select"></select>
+          </label>
+          <label>Protocol Hint:
+            <select id="l7-hint">
+              <option value="unknown">auto-detect</option>
+              <option value="http1">HTTP/1.1</option>
+              <option value="http2">HTTP/2 + HPACK + gRPC</option>
+              <option value="postgres">PostgreSQL v3</option>
+              <option value="redis">Redis RESP2/3</option>
+            </select>
+          </label>
+          <button id="btn-dissect" class="primary">Dissect Encrypted Plaintext Stream</button>
+        </div>
+        <div class="grid-2">
+          <div>
+            <h3>Egress Plaintext Chunks (Hex)</h3>
+            <textarea id="l7-egress" rows="5" spellcheck="false"></textarea>
+            <h3>Ingress Plaintext Chunks (Hex)</h3>
+            <textarea id="l7-ingress" rows="4" spellcheck="false"></textarea>
+          </div>
+          <div>
+            <h3>Decoded L7 Spans, HPACK Dynamic Table & Sanitized SQL</h3>
+            <pre id="l7-output" class="code-box tall"></pre>
+          </div>
+        </div>
+      </section>
+
+      <section id="panel-flamegraph" class="panel">
+        <div class="controls">
+          <label>Profile Preset:
+            <select id="fg-preset-select"></select>
+          </label>
+          <button id="btn-flamegraph" class="primary">Render Differential SVG</button>
+        </div>
+        <div class="grid-2">
+          <div>
+            <h3>Current Folded Stacks</h3>
+            <textarea id="fg-folded" rows="6" spellcheck="false"></textarea>
+            <h3>Baseline Folded Stacks (Optional — Enables Red/Blue Differential)</h3>
+            <textarea id="fg-baseline" rows="5" spellcheck="false"></textarea>
+          </div>
+          <div>
+            <h3>Flamegraph Render Output</h3>
+            <div id="fg-svg-wrap" class="svg-wrap"></div>
+          </div>
+        </div>
+      </section>
+    </main>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

@@ -170,7 +170,7 @@ fn build_xdp_parser_prog() -> Vec<BpfInsn> {
         BpfInsn::ldx_mem(BPF_W, 3, 1, 4),
         BpfInsn::mov64_reg(4, 2),
         BpfInsn::alu64_imm(BPF_ADD, 4, 34),
-        BpfInsn::jmp_reg(BPF_JGT, 4, 3, 5),
+        BpfInsn::jmp_reg(BPF_JGT, 4, 3, 7),
         BpfInsn::ldx_mem(BPF_H, 5, 2, 12),
         BpfInsn::jmp_imm(BPF_JNE, 5, 0x0008, 3),
         BpfInsn::ldx_mem(BPF_B, 6, 2, 14),
