@@ -4,6 +4,7 @@
 resolver = "2"
 members = [
     "crates/spectre-elf-btf",
+    "crates/spectre-verifier",
 ]
 
 [workspace.package]
@@ -15,6 +16,7 @@ authors = ["Ardhya Novri Ramadhan <ardhyasan@gmail.com>"]
 [workspace.dependencies]
 libc = "0.2"
 thiserror = "2.0"
+serde = { version = "1.0", features = ["derive"] }
 
 [profile.release]
 opt-level = 3
