@@ -6,6 +6,7 @@ members = [
     "crates/spectre-elf-btf",
     "crates/spectre-verifier",
     "crates/spectre-xdp",
+    "crates/spectre-tls",
 ]
 
 [workspace.package]

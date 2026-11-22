@@ -12,7 +12,7 @@
 | **M01** | `crates/spectre-elf-btf` | **PASSED** | `6/6` release + `4/4` Miri (`0` UB) | UAPI `BpfProgLoadAttr` exact offsets, `10,000` hostile ELF/BTF fuzz `0` panics, CO-RE flavor+anon union pass, `10,000/10,000` live Linux 6.18 RingBuf zero-drop & `0` FD leaks |
 | **M02** | `crates/spectre-verifier` | **PASSED** | `4/4` suites (`133` programs) | `Tnum` + strict & `CAP_PERFMON` modes: `133/133` (`0` false accepts / 100% soundness) vs Linux 6.18 `BPF_PROG_LOAD`, `BpfVm` + `disasm` verified on Linux & Windows |
 | **M03** | `probes/xdp_net` & `crates/spectre-xdp` | **PASSED** | `3/3` Linux kernel suites + cross-OS clippy/tests | `50,430+` frame XDP `BPF_PROG_TEST_RUN` + `BpfVm` parity, isolated `netns` `veth` AF_NETLINK ratelimit drop & detach, CO-RE RTT + PID-ns L7 cleartext capture & `0` FD leaks (`.text` = `0 B`) |
-| **M04** | `probes/tls_uprobe` & `crates/spectre-tls` | PENDING | Pending M04 gate | — |
+| **M04** | `probes/tls_uprobe` & `crates/spectre-tls` | **PASSED** | `5/5` tests (unit + live OpenSSL/Go TLS 1.3) | `ret_scanner` `objdump` exact parity, OpenSSL `3.5.5` `1,000` TLS 1.3 req/resp incl. `20,480 B` (`>16 KB`) 100% plaintext, Go `1.26` `64` goroutines w/ recursive stack growth (`0` crashes, `0` RingBuf drops, `0` FD leaks, `18.49s` total) |
 | **M05** | `crates/spectre-l7` | PENDING | Pending M05 gate | — |
 | **M06** | `probes/profiler` & `crates/spectre-profile` | PENDING | Pending M06 gate | — |
 | **M07** | `crates/spectre-oracle` | PENDING | Pending M07 gate | — |

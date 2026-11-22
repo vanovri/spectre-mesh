@@ -1,0 +1,12 @@
+[package]
+name = "spectre-tls"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+
+[dependencies]
+spectre-elf-btf = { path = "../spectre-elf-btf" }
+spectre-xdp = { path = "../spectre-xdp" }
+thiserror = { workspace = true }
+serde = { workspace = true }

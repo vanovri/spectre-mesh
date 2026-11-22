@@ -866,6 +866,31 @@ mod linux {
         bpf_map_update_elem(map_fd, &key, &val, BPF_ANY)
     }
 
+    /// Sum all per-CPU `u64` values for `key` inside a `BPF_MAP_TYPE_PERCPU_ARRAY` or `PERCPU_HASH`.
+    pub fn sum_percpu_u64(map_fd: RawFd, key: u32) -> Result<u64, ElfBtfError> {
+        let slots = if let Ok(s) = std::fs::read_to_string("/sys/devices/system/cpu/possible") {
+            if let Some((_, end)) = s.trim().split_once('-') {
+                end.parse::<usize>().map(|m| m + 1).unwrap_or(1)
+            } else {
+                online_cpu_ids().len().max(1)
+            }
+        } else {
+            online_cpu_ids().len().max(1)
+        }
+        .max(online_cpu_ids().len());
+        let mut buf = vec![0u8; slots * 8];
+        let k = key.to_le_bytes();
+        if bpf_map_lookup_elem(map_fd, &k, &mut buf)? {
+            return Ok(buf
+                .as_chunks::<8>()
+                .0
+                .iter()
+                .map(|c| u64::from_le_bytes(*c))
+                .sum());
+        }
+        Ok(0)
+    }
+
     #[cfg(test)]
     mod abi_tests {
         use super::*;

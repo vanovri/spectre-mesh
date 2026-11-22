@@ -207,6 +207,13 @@ mod linux_tcp {
             });
             out
         }
+
+        pub fn read_ringbuf_drops(&self) -> Result<u64, XdpError> {
+            let Some(mfd) = self.obj.map_fd("ringbuf_drops") else {
+                return Ok(0);
+            };
+            Ok(spectre_elf_btf::syscall::sum_percpu_u64(mfd, 0)?)
+        }
     }
 }
 

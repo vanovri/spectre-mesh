@@ -65,6 +65,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "spectre-tls"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "spectre-elf-btf",
+ "spectre-xdp",
+ "thiserror",
+]
+
+[[package]]
 name = "spectre-verifier"
 version = "0.1.0"
 dependencies = [

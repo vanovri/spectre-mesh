@@ -93,4 +93,95 @@ struct spectre_pidns_cfg {
     __u32 _pad;
 };
 
+/* Verifier-friendly RingBuf submission with zero inner size-branch state explosion.
+ * Passing constant 568B when `fast_small != 0` or full `sizeof(*evt)` otherwise. */
+SPECTRE_INLINE void spectre_ringbuf_emit_sized(
+    void *rb,
+    void *drops_map,
+    struct spectre_l7_event *evt,
+    int fast_small
+)
+{
+    long rc = fast_small
+        ? bpf_ringbuf_output(rb, evt, 56U + 512U, 0)
+        : bpf_ringbuf_output(rb, evt, sizeof(*evt), 0);
+    if (rc != 0) {
+        __u32 zero = 0;
+        __u64 *cnt = bpf_map_lookup_elem(drops_map, &zero);
+        if (cnt) {
+            __sync_fetch_and_add(cnt, 1);
+        }
+    }
+}
+
+/* Shared multi-chunk L7/TLS plaintext emitter:
+ * - Fast single-shot 568 B RingBuf path for payloads <= 512 B (29k+ capacity per 16 MB ring)
+ * - Unrolled 8-chunk DAG path (up to 32 KB per call, zero loop verifier explosion) for large payloads */
+SPECTRE_INLINE void spectre_emit_l7_chunks(
+    void *rb,
+    void *drops_map,
+    struct spectre_l7_event *evt,
+    __u64 ts,
+    __u64 conn_ptr,
+    __u32 pid,
+    __u32 tid,
+    __s32 fd,
+    __u64 buf_ptr,
+    __u64 total_len,
+    __u8 dir,
+    __u8 tls_source
+)
+{
+    if (total_len == 0ULL || buf_ptr == 0ULL) {
+        return;
+    }
+
+    if (total_len <= 512ULL) {
+        __u32 copy_len = (__u32)total_len;
+        if (copy_len == 0U || copy_len > 512U) {
+            return;
+        }
+        if (bpf_probe_read_user(evt->payload, copy_len, (const void *)buf_ptr) != 0) {
+            return;
+        }
+        evt->ts_ns = ts;
+        evt->conn_ptr = conn_ptr;
+        evt->pid = pid;
+        evt->tid = tid;
+        evt->fd = fd;
+        evt->payload_len = copy_len;
+        evt->direction = dir;
+        evt->tls_source = tls_source;
+        evt->chunk_seq = 0;
+        spectre_ringbuf_emit_sized(rb, drops_map, evt, 1);
+        return;
+    }
+
+#pragma unroll
+    for (int chunk = 0; chunk < 8; chunk++) {
+        __u64 offset = (__u64)chunk * L7_MAX_PAYLOAD;
+        if (offset >= total_len) {
+            break;
+        }
+        __u64 rem = total_len - offset;
+        __u32 copy_len = rem > L7_MAX_PAYLOAD ? L7_MAX_PAYLOAD : (__u32)rem;
+        if (copy_len == 0U || copy_len > L7_MAX_PAYLOAD) {
+            break;
+        }
+        if (bpf_probe_read_user(evt->payload, copy_len, (const void *)(buf_ptr + offset)) != 0) {
+            break;
+        }
+        evt->ts_ns = ts;
+        evt->conn_ptr = conn_ptr;
+        evt->pid = pid;
+        evt->tid = tid;
+        evt->fd = fd;
+        evt->payload_len = copy_len;
+        evt->direction = dir;
+        evt->tls_source = tls_source;
+        evt->chunk_seq = (__u16)chunk;
+        spectre_ringbuf_emit_sized(rb, drops_map, evt, 0);
+    }
+}
+
 #endif /* SPECTRE_EVENTS_H */

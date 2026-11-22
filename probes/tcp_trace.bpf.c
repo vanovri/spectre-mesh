@@ -92,8 +92,15 @@ struct {
 
 struct {
     __uint(type, BPF_MAP_TYPE_RINGBUF);
-    __uint(max_entries, 2097152);
+    __uint(max_entries, 16777216);
 } l7_events SEC(".maps");
+
+struct {
+    __uint(type, BPF_MAP_TYPE_PERCPU_ARRAY);
+    __uint(max_entries, 1);
+    __type(key, __u32);
+    __type(value, __u64);
+} ringbuf_drops SEC(".maps");
 
 SPECTRE_INLINE __u32 copy_ipv4(const __u8 bytes[4])
 {
@@ -237,32 +244,20 @@ SPECTRE_INLINE void emit_l7_cleartext(__s32 fd, __u64 buf_addr, __u64 raw_len, _
     __u32 tid = (__u32)pid_tgid;
     bpf_get_current_comm(evt->comm, sizeof(evt->comm));
 
-    __u64 offset = 0;
-#pragma unroll
-    for (int chunk = 0; chunk < 4; chunk++) {
-        if (offset >= raw_len) {
-            break;
-        }
-        __u64 rem = raw_len - offset;
-        __u32 copy_len = rem > L7_MAX_PAYLOAD ? L7_MAX_PAYLOAD : (__u32)rem;
-        if (copy_len == 0 || copy_len > L7_MAX_PAYLOAD) {
-            break;
-        }
-        if (bpf_probe_read_user(evt->payload, copy_len, (const void *)(buf_addr + offset)) != 0) {
-            break;
-        }
-        evt->ts_ns = ts;
-        evt->conn_ptr = 0;
-        evt->pid = pid;
-        evt->tid = tid;
-        evt->fd = fd;
-        evt->payload_len = copy_len;
-        evt->direction = dir;
-        evt->tls_source = L7_SRC_CLEARTEXT_SOCK;
-        evt->chunk_seq = (__u16)chunk;
-        bpf_ringbuf_output(&l7_events, evt, sizeof(*evt), 0);
-        offset += copy_len;
-    }
+    spectre_emit_l7_chunks(
+        &l7_events,
+        &ringbuf_drops,
+        evt,
+        ts,
+        0ULL,
+        pid,
+        tid,
+        fd,
+        buf_addr,
+        raw_len,
+        dir,
+        L7_SRC_CLEARTEXT_SOCK
+    );
 }
 
 struct bpf_raw_tracepoint_args_local {
