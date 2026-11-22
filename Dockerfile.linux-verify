@@ -1,0 +1,48 @@
+# Dockerfile.linux-verify — Deterministic Full-Kernel Verification Harness for SpectreMesh
+# Usage:
+#   docker build -f Dockerfile.linux-verify -t spectre-verify .
+#   docker run --rm --privileged spectre-verify make verify-all
+
+FROM ubuntu:24.04
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    LANG=C.UTF-8 \
+    LC_ALL=C.UTF-8 \
+    CARGO_HOME=/usr/local/cargo \
+    RUSTUP_HOME=/usr/local/rustup \
+    PATH="/usr/local/cargo/bin:/usr/local/bin:${PATH}"
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    ca-certificates \
+    clang \
+    llvm \
+    pkg-config \
+    libssl-dev \
+    golang-go \
+    linux-libc-dev \
+    binaryen \
+    make \
+    iproute2 \
+    procps \
+    curl \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Node.js 22 LTS for M09 WASM Studio build & headless Vitest verification
+RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
+    && apt-get install -y --no-install-recommends nodejs \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Rust stable + rustfmt + clippy + wasm32-unknown-unknown + wasm-bindgen-cli
+RUN curl -sSf https://sh.rustup.rs | sh -s -- -y \
+    --default-toolchain stable \
+    --profile minimal \
+    --component rustfmt,clippy \
+    --target wasm32-unknown-unknown \
+    && cargo install wasm-bindgen-cli --version 0.2.100 --locked
+
+WORKDIR /workspace
+COPY . /workspace
+
+CMD ["make", "verify-all"]

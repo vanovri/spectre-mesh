@@ -1,0 +1,9 @@
+/target/
+/probes/build/*.o
+/studio/node_modules/
+/studio/dist/
+/studio/src/wasm/
+*.log
+*.tmp
+.DS_Store
+Thumbs.db
