@@ -74,6 +74,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "spectre-xdp"
+version = "0.1.0"
+dependencies = [
+ "libc",
+ "serde",
+ "spectre-elf-btf",
+ "spectre-verifier",
+ "thiserror",
+]
+
+[[package]]
 name = "syn"
 version = "3.0.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"

@@ -179,6 +179,9 @@ mod linux_loader {
                     spec.map_flags,
                     &spec.name,
                 )?;
+                if spec.name == "pidns_cfg" && spec.value_size == 24 {
+                    syscall::configure_pidns_map(fd.as_raw_fd())?;
+                }
                 maps.insert(spec.name.clone(), fd);
                 map_specs.insert(spec.name.clone(), spec);
             }

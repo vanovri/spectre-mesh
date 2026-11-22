@@ -1,0 +1,18 @@
+[package]
+name = "spectre-xdp"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+description = "Pure-Rust Netlink XDP attacher, veth netns helper, XDP firewall controller, and TCP RTT/cleartext monitor"
+
+[dependencies]
+spectre-elf-btf = { path = "../spectre-elf-btf" }
+thiserror.workspace = true
+serde.workspace = true
+
+[target.'cfg(target_os = "linux")'.dependencies]
+libc.workspace = true
+
+[dev-dependencies]
+spectre-verifier = { path = "../spectre-verifier" }

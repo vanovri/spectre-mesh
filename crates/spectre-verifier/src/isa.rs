@@ -90,6 +90,7 @@ pub const HELPER_GET_CURRENT_COMM: i32 = 16;
 pub const HELPER_GET_STACKID: i32 = 27;
 pub const HELPER_PROBE_READ_USER: i32 = 112;
 pub const HELPER_PROBE_READ_KERNEL: i32 = 113;
+pub const HELPER_GET_NS_CURRENT_PID_TGID: i32 = 120;
 pub const HELPER_RINGBUF_OUTPUT: i32 = 130;
 pub const HELPER_RINGBUF_RESERVE: i32 = 131;
 pub const HELPER_RINGBUF_SUBMIT: i32 = 132;
@@ -354,6 +355,7 @@ pub const fn helper_name(id: i32) -> &'static str {
         HELPER_GET_STACKID => "bpf_get_stackid",
         HELPER_PROBE_READ_USER => "bpf_probe_read_user",
         HELPER_PROBE_READ_KERNEL => "bpf_probe_read_kernel",
+        HELPER_GET_NS_CURRENT_PID_TGID => "bpf_get_ns_current_pid_tgid",
         HELPER_RINGBUF_OUTPUT => "bpf_ringbuf_output",
         HELPER_RINGBUF_RESERVE => "bpf_ringbuf_reserve",
         HELPER_RINGBUF_SUBMIT => "bpf_ringbuf_submit",

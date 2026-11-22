@@ -5,6 +5,7 @@ resolver = "2"
 members = [
     "crates/spectre-elf-btf",
     "crates/spectre-verifier",
+    "crates/spectre-xdp",
 ]
 
 [workspace.package]

@@ -11,7 +11,7 @@
 | --- | --- | --- | --- | --- |
 | **M01** | `crates/spectre-elf-btf` | **PASSED** | `6/6` release + `4/4` Miri (`0` UB) | UAPI `BpfProgLoadAttr` exact offsets, `10,000` hostile ELF/BTF fuzz `0` panics, CO-RE flavor+anon union pass, `10,000/10,000` live Linux 6.18 RingBuf zero-drop & `0` FD leaks |
 | **M02** | `crates/spectre-verifier` | **PASSED** | `4/4` suites (`133` programs) | `Tnum` + strict & `CAP_PERFMON` modes: `133/133` (`0` false accepts / 100% soundness) vs Linux 6.18 `BPF_PROG_LOAD`, `BpfVm` + `disasm` verified on Linux & Windows |
-| **M03** | `probes/xdp_net` & `crates/spectre-xdp` | IN PROGRESS | Pending M03 gate | — |
+| **M03** | `probes/xdp_net` & `crates/spectre-xdp` | **PASSED** | `3/3` Linux kernel suites + cross-OS clippy/tests | `50,430+` frame XDP `BPF_PROG_TEST_RUN` + `BpfVm` parity, isolated `netns` `veth` AF_NETLINK ratelimit drop & detach, CO-RE RTT + PID-ns L7 cleartext capture & `0` FD leaks (`.text` = `0 B`) |
 | **M04** | `probes/tls_uprobe` & `crates/spectre-tls` | PENDING | Pending M04 gate | — |
 | **M05** | `crates/spectre-l7` | PENDING | Pending M05 gate | — |
 | **M06** | `probes/profiler` & `crates/spectre-profile` | PENDING | Pending M06 gate | — |

@@ -698,7 +698,29 @@ mod linux {
         Ok(perf)
     }
 
+    /// Parse `/sys/devices/system/cpu/online` (e.g. `"0-7"` or `"0,2-5"`) into CPU IDs.
+    pub fn online_cpu_ids() -> Vec<i32> {
+        let Ok(raw) = std::fs::read_to_string("/sys/devices/system/cpu/online") else {
+            return vec![0];
+        };
+        let mut cpus = Vec::new();
+        for part in raw.trim().split(',') {
+            if let Some((a, b)) = part.split_once('-') {
+                if let (Ok(start), Ok(end)) = (a.parse::<i32>(), b.parse::<i32>()) {
+                    cpus.extend(start..=end);
+                }
+            } else if let Ok(c) = part.parse::<i32>() {
+                cpus.push(c);
+            }
+        }
+        if cpus.is_empty() {
+            cpus.push(0);
+        }
+        cpus
+    }
+
     /// Attach an eBPF `uprobe` or `uretprobe` at `binary_path` + `offset` via `perf_event_open`.
+    /// Note: Linux `perf_event` BPF attachments for kprobe/uprobe/tracepoint apply system-wide when `pid = -1, cpu = 0`.
     pub fn attach_uprobe_perf(
         binary_path: &str,
         offset: u64,
@@ -829,6 +851,19 @@ mod linux {
             }
             Ok(n > 0)
         }
+    }
+
+    pub fn configure_pidns_map(map_fd: RawFd) -> Result<(), ElfBtfError> {
+        use std::os::unix::fs::MetadataExt;
+        let Ok(meta) = std::fs::metadata("/proc/self/ns/pid") else {
+            return Ok(());
+        };
+        let mut val = [0u8; 24];
+        val[0..8].copy_from_slice(&meta.dev().to_le_bytes());
+        val[8..16].copy_from_slice(&meta.ino().to_le_bytes());
+        val[16..20].copy_from_slice(&1u32.to_le_bytes());
+        let key = 0u32.to_le_bytes();
+        bpf_map_update_elem(map_fd, &key, &val, BPF_ANY)
     }
 
     #[cfg(test)]

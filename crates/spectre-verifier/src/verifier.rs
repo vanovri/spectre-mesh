@@ -11,11 +11,11 @@ use crate::isa::{
     BPF_LSH, BPF_MEM, BPF_MOD, BPF_MOV, BPF_MUL, BPF_NEG, BPF_OR, BPF_PSEUDO_CALL,
     BPF_PSEUDO_MAP_FD, BPF_PSEUDO_MAP_VALUE, BPF_RSH, BPF_ST, BPF_STX, BPF_SUB, BPF_X, BPF_XOR,
     HELPER_GET_CURRENT_COMM, HELPER_GET_CURRENT_PID_TGID, HELPER_GET_CURRENT_UID_GID,
-    HELPER_GET_PRANDOM_U32, HELPER_GET_SMP_PROCESSOR_ID, HELPER_GET_STACKID, HELPER_KTIME_GET_NS,
-    HELPER_MAP_DELETE_ELEM, HELPER_MAP_LOOKUP_ELEM, HELPER_MAP_UPDATE_ELEM, HELPER_PROBE_READ,
-    HELPER_PROBE_READ_KERNEL, HELPER_PROBE_READ_USER, HELPER_RINGBUF_DISCARD,
-    HELPER_RINGBUF_OUTPUT, HELPER_RINGBUF_QUERY, HELPER_RINGBUF_RESERVE, HELPER_RINGBUF_SUBMIT,
-    HELPER_TRACE_PRINTK,
+    HELPER_GET_NS_CURRENT_PID_TGID, HELPER_GET_PRANDOM_U32, HELPER_GET_SMP_PROCESSOR_ID,
+    HELPER_GET_STACKID, HELPER_KTIME_GET_NS, HELPER_MAP_DELETE_ELEM, HELPER_MAP_LOOKUP_ELEM,
+    HELPER_MAP_UPDATE_ELEM, HELPER_PROBE_READ, HELPER_PROBE_READ_KERNEL, HELPER_PROBE_READ_USER,
+    HELPER_RINGBUF_DISCARD, HELPER_RINGBUF_OUTPUT, HELPER_RINGBUF_QUERY, HELPER_RINGBUF_RESERVE,
+    HELPER_RINGBUF_SUBMIT, HELPER_TRACE_PRINTK,
 };
 use crate::tnum::Tnum;
 
@@ -1405,17 +1405,24 @@ impl<'a> VerifierRunner<'a> {
                     if let Some(sh) = b.is_const() {
                         let sh32 = sh as u32;
                         let tnum = a.tnum.lshift(sh32);
+                        let umin = tnum.umin();
                         let umax = if sh32 < 64 {
                             a.umax.checked_shl(sh32).unwrap_or(u64::MAX)
                         } else {
                             u64::MAX
+                        }
+                        .min(tnum.umax());
+                        let (smin, smax) = if umax <= i64::MAX as u64 {
+                            (umin as i64, umax as i64)
+                        } else {
+                            (i64::MIN, i64::MAX)
                         };
                         ScalarBounds {
                             tnum,
-                            umin: tnum.umin(),
-                            umax: umax.min(tnum.umax()),
-                            smin: i64::MIN,
-                            smax: i64::MAX,
+                            umin,
+                            umax,
+                            smin,
+                            smax,
                         }
                     } else {
                         ScalarBounds::unknown()
@@ -1623,6 +1630,20 @@ impl<'a> VerifierRunner<'a> {
             | HELPER_GET_PRANDOM_U32
             | HELPER_GET_SMP_PROCESSOR_ID
             | HELPER_RINGBUF_QUERY => RegState::Scalar(ScalarBounds::unknown()),
+            HELPER_GET_NS_CURRENT_PID_TGID => {
+                if let RegState::PtrToStack { off, var_off } = &r3 {
+                    if var_off.is_const() {
+                        self.write_stack(
+                            pc,
+                            state,
+                            *off,
+                            8,
+                            &RegState::Scalar(ScalarBounds::unknown()),
+                        )?;
+                    }
+                }
+                RegState::Scalar(ScalarBounds::unknown())
+            }
             HELPER_PROBE_READ
             | HELPER_PROBE_READ_USER
             | HELPER_PROBE_READ_KERNEL
