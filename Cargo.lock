@@ -100,6 +100,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "spectre-oracle"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "spectre-l7",
+ "spectre-tls",
+ "spectre-xdp",
+ "thiserror",
+]
+
+[[package]]
 name = "spectre-profile"
 version = "0.1.0"
 dependencies = [
