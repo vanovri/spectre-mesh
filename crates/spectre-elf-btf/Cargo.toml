@@ -1,0 +1,13 @@
+[package]
+name = "spectre-elf-btf"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+description = "Pure-Rust ELF64 parser, BTF CO-RE relocator, raw SYS_bpf RAII loader, and double-mmap RingBuf consumer"
+
+[dependencies]
+thiserror.workspace = true
+
+[target.'cfg(target_os = "linux")'.dependencies]
+libc.workspace = true
