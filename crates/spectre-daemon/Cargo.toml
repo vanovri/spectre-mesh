@@ -1,0 +1,21 @@
+[package]
+name = "spectre-daemon"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+
+[dependencies]
+spectre-elf-btf = { path = "../spectre-elf-btf" }
+spectre-verifier = { path = "../spectre-verifier" }
+spectre-xdp = { path = "../spectre-xdp" }
+spectre-tls = { path = "../spectre-tls" }
+spectre-l7 = { path = "../spectre-l7" }
+spectre-profile = { path = "../spectre-profile" }
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "sync", "time", "net", "io-util"] }
+axum = "0.8"
+clap = { version = "4", features = ["derive"] }
+parking_lot = "0.12"
+serde = { workspace = true }
+serde_json = "1.0"
+thiserror = { workspace = true }

@@ -1,0 +1,18 @@
+[package]
+name = "spectre-tui"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+
+[[bin]]
+name = "spectre-top"
+path = "src/main.rs"
+
+[dependencies]
+spectre-daemon = { path = "../spectre-daemon" }
+spectre-l7 = { path = "../spectre-l7" }
+ratatui = "0.29"
+crossterm = "0.28"
+clap = { version = "4", features = ["derive"] }
+serde_json = "1.0"

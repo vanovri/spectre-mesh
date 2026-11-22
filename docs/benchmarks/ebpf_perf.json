@@ -1,0 +1,43 @@
+{
+  "os": "linux",
+  "arch": "x86_64",
+  "commit_sha": "5149d8960fdf",
+  "generated_at_iso": "2026-11-22T10:53:37Z",
+  "xdp": {
+    "kernel_repeats": 500000,
+    "kernel_ns_per_pkt": 58.0,
+    "kernel_mpps": 17.24137931034483,
+    "vm_iters": 100000,
+    "vm_ns_per_pkt": 219.65391,
+    "vm_mpps": 4.552616431913277
+  },
+  "ringbuf": {
+    "events": 100000,
+    "drops": 0,
+    "elapsed_ms": 4138.065541,
+    "events_per_sec": 24165.88113677729,
+    "mb_per_sec": 0.5531131241632986
+  },
+  "tls_uprobe": {
+    "requests": 2000,
+    "baseline_us_per_req": 249.665523,
+    "uprobe_us_per_req": 328.07043,
+    "delta_us_per_req": 78.40490699999998,
+    "ringbuf_drops": 0
+  },
+  "l7_dissector": {
+    "total_requests": 20000,
+    "total_bytes": 1335000,
+    "elapsed_ms": 43.961604,
+    "req_per_sec": 454942.453874067,
+    "mb_per_sec": 28.96061782464406,
+    "ns_per_req": 2198.0802
+  },
+  "verifier": {
+    "programs_verified": 2000,
+    "probes_parsed": 6,
+    "elapsed_ms": 2035.6338859999998,
+    "verifs_per_sec": 982.4949435922291,
+    "us_per_program": 1017.8169429999999
+  }
+}
